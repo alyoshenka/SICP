@@ -1,0 +1,9 @@
+When using the square procedure, the value to be squared
+is only calculated once, while when using an explicit
+multiplication it must be calculated twice.
+
+Every time expmod is called with an even exponent, two more
+expmod calls are spawned. This makes it so the algorithms time
+takes a linearly increasing amount of time to complete: O(n)
+
+O(log(2^n)) = O(n * log2) = O(n)

@@ -1,0 +1,2 @@
+
+Running (f f) will amount to (f 2) which will become (2 2) which doesn't really do anything.
