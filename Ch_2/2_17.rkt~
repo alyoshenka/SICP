@@ -29,4 +29,19 @@
 ; test
 (= 5 (last-pair (list 1 2 3 4 5)))
 
+; 2.18
+; not the most elegant solution, but it works
+(define (reverse items)
+  (let
+      ((len (length-iter items)))
+    (define (add-item i)
+      (if (< i 0)
+          nil
+          (cons (list-ref items i) (add-item (- i 1)))))
+    (add-item (- len 1))))
+
+; test
+(reverse (list 1 2 3 4 5))
+(reverse (list 5))
+(reverse (list 2 3))
 
