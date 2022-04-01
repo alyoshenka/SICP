@@ -232,3 +232,30 @@
                  (queen-cols (- k 1))))
           (enumerate-interval 1 board-size)))))
   (queen-cols board-size))
+
+#|
+Explain why this interchange makes the program run slowly.
+Estimate how long it will take Louis’s program to solve the
+eight-queens puzzle, assuming that the program in Exercise
+2.42 solves the puzzle in time T.
+
+T*k^2
+The original procedure adds a new column entry once for every row
+The new procedure adds a new row for every entry in rest-of-queens,
+however every iteration it must calculate the existing queens
+from 1 - k
+
+Official answer (had to look up):
+T^k
+In the original solution, queen-cols is called once for each column
+in the board. This is an expensive procedure to call, since it
+generates the sequence of all possible ways to place k queens in k
+columns. By moving queen-cols so it gets called by flatmap, we're
+transforming a linear recursive process to a tree-recursive process.
+The flatmap procedure is called for each row of the kth column, so the
+new procedure is generating all the possible solutions for the first
+k - 1 columns for each one of these rows.
+Tree-recursive processes grow exponentially. It it takes time T to
+execute the original version of queens for a given board size, we can
+expect the new version to take roughly T^k time to execute.
+|#
