@@ -14,6 +14,12 @@
                         (deriv (multiplicand exp) var))
           (make-product (deriv (multiplier exp) var)
                         (multiplicand exp))))
+        ((and (exponentiation? exp) (number? (exponent exp)))
+         (make-product
+          (exponent exp)
+          (make-product
+           (make-exponentiation (base exp) (- (exponent exp) 1))
+           (deriv (base exp) var))))
         (else
          (error "unknown expression type: DERIV" exp))))
 ; variable?
@@ -72,10 +78,22 @@
 (define (base exp) (cadr exp))
 (define (exponent exp) (caddr exp))
 (define (make-exponentiation base exponent)
-  (cond ((and (=number? base) (=number? exponent)) (expt base exponent)) ; atom?
-        ((and (=number? exponent) (= exponent 0)) 1)
-        ((and (=number? exponent) (= exponent 1)) base)
+  (cond ((=number? exponent 0) 1)
+        ((=number? exponent 1) base)
+        ((and (number? base) (number? exponent)) (expt base exponent))
         (else (list '** base exponent))))
 
 ; tests
-(make-exponentiation 5 2)
+(display "25 = ")(make-exponentiation 5 2)
+(display "25 = ")(make-exponentiation 5 2)
+(display "1 = ")(make-exponentiation 'x 0)
+(display "x = ")(make-exponentiation 'x 1)
+(display "** x 2 = ")(make-exponentiation 'x 2)
+(display "** 2 x = ")(make-exponentiation 2 'x)
+
+; (deriv '(* (* x y) (+ x 3)) 'x)
+
+(deriv '(** x 2) 'x)
+(deriv '(* a (** x 2)) 'x)
+(deriv '(+ (* a (** x 2)) (* b x)) 'x)
+(deriv '(+ (+ (* a (** x 2)) (* b x)) c) 'x)
