@@ -29,20 +29,48 @@
 (and (variable? v1) (variable? v2) (eq? v1 v2)))
 ; make-sum
 ; (define (make-sum a1 a2) (list '+ a1 a2))
+#|
 (define (make-sum a1 a2)
   (cond ((=number? a1 0) a2)
         ((=number? a2 0) a1)
-        ((and (number? a1) (number? a2))
-         (+ a1 a2))
+        ((and (number? a1) (number? a2))(+ a1 a2))
         (else (list '+ a1 a2))))
+|#
+(define (make-sum . nums)
+  (define (make-sum-list nums)
+    (if (null? nums)
+        0
+        (make-sum-two (car nums) (make-sum-list (cdr nums)))))
+  (define (make-sum-two a1 a2)
+  (cond ((=number? a1 0) a2)
+        ((=number? a2 0) a1)
+        ((and (number? a1) (number? a2))(+ a1 a2))
+        (else (list '+ a1 a2))))
+
+  (make-sum-list nums))   
 ; make-product
 ; (define (make-product m1 m2) (list '* m1 m2))
+#|
 (define (make-product m1 m2)
   (cond ((or (=number? m1 0) (=number? m2 0)) 0)
         ((=number? m1 1) m2)
         ((=number? m2 1) m1)
         ((and (number? m1) (number? m2)) (* m1 m2))
         (else (list '* m1 m2))))
+|#
+(define (make-product . nums)
+  (define (make-prod-list nums)
+    (if (null? nums)
+        1
+        (make-prod-two (car nums) (make-prod-list (cdr nums)))))
+  (define (make-prod-two m1 m2)
+  (cond ((or (=number? m1 0) (=number? m2 0)) 0)
+        ((=number? m1 1) m2)
+        ((=number? m2 1) m1)
+        ((and (number? m1) (number? m2)) (* m1 m2))
+        (else (list '* m1 m2))))
+
+  (make-prod-list nums))
 ; sum?
 (define (sum? x) (and (pair? x) (eq? (car x) '+)))
 ; addend
@@ -91,9 +119,27 @@
 (display "** x 2 = ")(make-exponentiation 'x 2)
 (display "** 2 x = ")(make-exponentiation 2 'x)
 
-; (deriv '(* (* x y) (+ x 3)) 'x)
-
 (deriv '(** x 2) 'x)
 (deriv '(* a (** x 2)) 'x)
 (deriv '(+ (* a (** x 2)) (* b x)) 'x)
 (deriv '(+ (+ (* a (** x 2)) (* b x)) c) 'x)
+
+; 2.57
+(newline)
+(display "2.57")(newline)
+
+(display "1")(newline)
+(deriv '(+ x 3) 'x)
+(display "y")(newline)
+(deriv '(* x y) 'x) 
+(display "(+ (* (+ x 3) y) (* y x))")(newline)
+(deriv '(* (* x y) (+ x 3)) 'x)
+(display "(+ (* y (+ x 3)) (* y x))")(newline)
+(deriv '(* x y (+ x 3)) 'x)
+
+; 2.58
+#|
+a.
+b.
+No clue...
+|#
