@@ -1,4 +1,9 @@
-#lang sicp
+#lang racket
+
+(provide element-of-set?)
+(provide intersection-set)
+(provide adjoin-set)
+(provide union-set)
 
 (define (element-of-set? x set)
   (cond ((null? set) false)
@@ -23,31 +28,61 @@
               ((< x2 x1)
                (intersection-set set1 (cdr set2)))))))
 
-; 2.61
+; 2.62
 
-(define (adjoin-set set1 set2)
+(define (union-set set1 set2)
   (cond ((null? set1) set2)
         ((null? set2) set1)
-        (else (display set1)(display set2)
+        (else             
          (let ((x1 (car set1))
                     (x2
                      (if (pair? set2)
                          (car set2)
                          set2)))
                 (cond ((element-of-set? x2 set1)
-                       (adjoin-set set1 (cdr set2)))
+                       (union-set set1 (cdr set2)))
                       ((< x1 x2)
-                       ;(adjoin-set (cons (car set1) (cons x2 (cdr set1))) (cdr set2)))
-                       (cons (car set1) (adjoin-set (cdr set1) set2)))
+                       (cons x1 (union-set (cdr set1) set2)))
                       ((< x2 x1)
-                       ;(adjoin-set set1 (cdr set2))))))))
-                       (adjoin-set (cons x1 (cons x2 (cdr set1))) (cdr set2))))))))
+                       (cons x2 (union-set (cons x1 (cdr set1)) (cdr set2)))))))))
                 
                        
         
+(display "2.62")(newline)
+
+(union-set (list 1 3 5) (list 2 4 6))
+(union-set (list 1 5 6) (list 2 3 4))
+(union-set (list 1 2 3) (list 1 2 3))
+
+(define s1 (list 1 2 3))
+(define s2 (list 4 5 6))
+
+(display "#t")(newline)
+(element-of-set? 3 (union-set s1 s2))
+(or (element-of-set? 3 s1) (element-of-set? 3 s2))
+
+(display "#t")(newline)
+(element-of-set? 4 (union-set s1 s2))
+(or (element-of-set? 4 s1) (element-of-set? 4 s2))
+
+(display "#f")(newline)
+(element-of-set? 7 (union-set s1 s2))
+(or (element-of-set? 7 s1) (element-of-set? 7 s2))
+
+; 2.62
+
+(define (adjoin-set x set)
+  (cond
+    ((null? set) (list x))
+    ((not (pair? set)) (list set x))
+    (else 
+     (let ((x2 (car set)))
+       (cond ((= x x2) set)
+             ((< x x2) (cons x set))
+             ((< x2 x) (cons x2 (adjoin-set x (cdr set)))))))))
+
 (display "2.61")(newline)
 
-(adjoin-set (list 1 3 5) (list 2 4 6))
-(adjoin-set (list 1 2 3) (list 1 2 3))
-(adjoin-set (list 1 2 3) (list 3 2 1))
-(adjoin-set (list 3 2 1) (list 1 2 3))
+(adjoin-set 1 (list 1 2 3))
+(adjoin-set 1 (list 2 3 4))
+(adjoin-set 4 (list 1 2 3))
