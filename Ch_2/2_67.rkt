@@ -51,6 +51,20 @@
         ((= bit 1) (right-branch branch))
         (else (error "bad bit: CHOOSE-BRANCH" bit))))
 
+(define (adjoin-set x set)
+  (cond ((null? set) (list x))
+        ((< (weight x) (weight (car set))) (cons x set))
+        (else (cons (car set)
+                    (adjoin-set x (cdr set))))))
+
+(define (make-leaf-set pairs)
+  (if (null? pairs)
+      '()
+      (let ((pair (car pairs)))
+        (adjoin-set (make-leaf (car pair) ; symbol
+                               (cadr pair)) ; frequency
+                    (make-leaf-set (cdr pairs))))))
+
 (define sample-message '(0 1 1 0 0 1 0 1 0 1 1 1 0))
 (decode sample-message sample-tree)
 (define decoded-message (decode sample-message sample-tree))
@@ -100,9 +114,94 @@
 (define (generate-huffman-tree pairs)
   (successive-merge (make-leaf-set pairs)))
 
+#|
 (define (successive-merge leaf-set)
-  (if ((null? (cdr leaf-set)) leaf-set)
+  (define (iter leaf-set node)
+    (if (null? (cdr leaf-set)) leaf-set
+        (let ((s1
+               (if (leaf? (car leaf-set))
+                   (list (symbol-leaf (car leaf-set)))
+                   (car (car leaf-set))))
+              (w1
+               (if (leaf? (car leaf-set))
+                   (weight-leaf (car leaf-set))
+                   (cadar leaf-set)))
+              (s2
+               (if (leaf? (cadr leaf-set))
+                   (list (symbol-leaf (cadr leaf-set)))
+                   (caadr leaf-set)))
+              (w2
+               (if (leaf? (cadr leaf-set))
+                   (weight-leaf (cadr leaf-set))
+                   (cdadr leaf-set))))
+          (let ((new-pair (list (append s1 s2) (+ w1 w2))))
+            (iter (cons new-pair (cddr leaf-set)))))))
+  (car (iter leaf-set '())))
+|#
+
+(define (successive-merge leaf-set)
+  (cond ((null? set) '())
+        ((null? (cdr leaf-set)) (car leaf-set))
+        (else (successive-merge
+               (adjoin-set (make-code-tree
+                            (car leaf-set)
+                            (cadr leaf-set))
+                           (cddr leaf-set))))))
+  
+
+(define leafs (list (list 'D 1)(list 'C 1)(list 'B 2)(list 'A 4)))
+;(successive-merge leafs)
+(generate-huffman-tree leafs)
       
-    ; 1 elem: return
-    ; else merge 2 smallest
-    ; ordered set: merge first 2 (increasing weights)
+; 2.70
+(newline)(display "2.70")(newline)(newline)
+
+(define rock-pairs (list (list 'WAH 1)(list 'BOOM 1)
+                         (list 'A 2)(list 'GET 2)(list 'JOB 2)
+                         (list 'SHA 3)
+                         (list 'YIP 9)
+                         (list 'NA 16)))
+;(display "rock pairs: ")(display rock-pairs)(newline)
+;(display "rock leafs: ")(display (make-leaf-set rock-pairs))(newline)
+
+(define rock-tree (generate-huffman-tree rock-pairs))
+(display "rock tree: ")(display rock-tree)(newline)
+
+(newline)
+(display "message")(newline)
+(define song (list
+              'GET 'A 'JOB
+              'SHA 'NA 'NA 'NA 'NA 'NA 'NA 'NA 'NA
+              'GET 'A 'JOB
+              'SHA 'NA 'NA 'NA 'NA 'NA 'NA 'NA 'NA
+              'WAH 'YIP 'YIP 'YIP 'YIP 'YIP 'YIP 'YIP 'YIP 'YIP 'YIP
+              'SHA 'BOOM))
+(encode song rock-tree)
+
+; 84 bits to encode ^
+; 108 with fixed length
+
+(+ 16 (* 2 9)(* 4 2) 5 5 (* 4 3) (* 5 2) (* 5 2))
+(* 3 (+ 16 9 3 2 2 2 1 1))
+
+; 2.71
+
+; 1 for the most
+; n-1 for the least
+
+; 2.72
+#|
+rf: 1,2,4,2^(n-1)
+
+order of growth to encode most frequent symbol (1 bits)
+
+O(1)
+constant, because it checks the left tree first,
+and there is only one symbol in the left tree: the
+one we're looking for. returns on next iteration
+
+order of growth to encode least frequent symbol (n-1 bits)
+
+n (*1.5) because at every level it must search n-l symbols to find the last one, where l is the level in the tree
+
+|#
