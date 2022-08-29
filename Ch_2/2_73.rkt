@@ -1,5 +1,7 @@
 #lang racket
 
+(require "./2_73_helpers.rkt")
+
 ; 2.73
 
 ; old derivative helpers
@@ -90,50 +92,98 @@ the program above.
 
 (define (install-sum-package)
   ;; internal procedures
-  (define (make-sum a1 a2) (list '+ a1 a2))
-  (define (addend s) (cadr s))
-  (define (augend s) (caddr s))
+  (define (addend s) (car s))
+  (define (augend s) (cadr s))
   (define (sum exp var)
     (make-sum (deriv (addend exp) var)
               (deriv (augend exp) var)))
     
   ;; interface to the rest of the system
-  (define (tag x) (attach-tag 'sum x))
-  (put 'deriv '(+) sum))
-
-(define (make-sum add aug)
-  ((get 'sum '+) add aug))
+  (put 'deriv '+ sum))
 
 (define (install-product-package)
   ;; internal procedures
-  (define (make-product m1 m2) (list '* m1 m2))
-  (define (multiplier p) (cadr p))
-  (define (multiplicand p) (caddr p))
-  (define (product 
+  (define (multiplier p) (car p))
+  (define (multiplicand p) (cadr p))
+  (define (product exp var)
+    (make-sum (make-product
+               (multiplier exp)
+               (deriv (multiplicand exp) var))
+              (make-product
+               (deriv (multiplier exp) var)
+               (multiplicand exp))))
 
   ;; interface to the rest of the system
-  (define (tag x) (attach-tag 'product x))
-  (put 'deriv '(*) product))
+  (put 'deriv '* product))
 
-(define (make-product a b)
-  ((get 'product '*) a b))
+; test
+(display "2.73 b")(newline)
+
+(display "installing sums package: ")(install-sum-package)
+(display "installing products package: ")(install-product-package)
+(newline)
+
+(display "(+ x 3) x")(newline)
+(deriv '(+ x 3) 'x)
+(display "'(+ 1 0)")(newline)
+(newline)
+
+(display "(* x y) x")(newline)
+(deriv '(* x y) 'x)
+(display "'(+ (* x 0) (* 1 y))")(newline)
+(newline)
+
+(display "(* (* x y) (+ x 3)) x")(newline)
+(deriv '(* (* x y) (+ x 3)) 'x)
+(display "'(+ (* (* x y) (+ 1 0)) (* (+ (* x 0) (* 1 y)) (+ x 3)))")(newline)
+(newline)
+
 
 #|
-
----
 c. Choose any additional differentiation rule that you
 like, such as the one for exponents (Exercise 2.56), and
 install it in this data-directed system.
+|#
 
+; (a^x)' = a^x ln a
+(define (make-exponent b e) (list '^ b e))
+(define (make-difference a b) (list '- a b))
 
----
+(define (install-exponent-package)
+  ;; internal procedures
+  (define (base p) (car p))
+  (define (exponent p) (cadr p))
+  (define (derivative exp var)
+    (make-product
+     (exponent exp)
+     (make-exponent
+      (base exp)
+      (make-difference (exponent exp) 1))))
+
+  ;; interface to the rest of the system
+  (put 'deriv '^ derivative))
+
+; tests
+(display "2.73 b")(newline)
+
+(display "installing exponents package: ")(install-exponent-package)
+(newline)
+
+(display "'(* a (^ x (- a 1)))")(newline)
+(deriv '(^ x a) 'x)
+(newline)
+
+#|
 d. In this simple algebraic manipulator the type of an
 expression is the algebraic operator that binds it together. Suppose,
 however, we indexed the procedures
 in the opposite way, so that the dispatch line in deriv
 looked like
-((get (operator exp) 'deriv) (operands exp) var)
+new: ((get (operator exp) 'deriv) (operands exp) var)
+old: ((get 'deriv (operator exp)) (operands exp) var)
 What corresponding changes to the derivative system
 are required?
 
+Reverse the order that the tags are put into the system
+ie (put 'deriv 'symbol derivative)) -> (put 'symbol 'deriv derivative))
 |#
