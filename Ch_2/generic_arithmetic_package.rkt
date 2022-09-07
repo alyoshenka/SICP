@@ -14,9 +14,13 @@
       (error "Bad tagged datum: CONTENTS" datum)))
 
 (define (apply-generic op . args)
+  (display "- apply-generic: ")(display op)(display ", ")(display args)(newline)
   (let ((type-tags (map type-tag args)))
+    (display "  type-tags: ")(display type-tags)(newline)
     (let ((proc (get op type-tags)))
-      (if proc
+      (display "  proc: ")(display proc)(newline)
+      (display "  map contents args: ")(display (map contents args))(newline)
+      (if proc          
           (apply proc (map contents args))
           (error
            "No method for these types: APPLY-GENERIC"
@@ -93,7 +97,7 @@
   (define (real-part z) (car z))
   (define (imag-part z) (cdr z))
   (define (make-from-real-imag x y) (cons x y))
-  (define (magnitude z)
+  (define (magnitude-rectangular z)
     (sqrt (+ (square (real-part z))
              (square (imag-part z)))))
   (define (angle z)
@@ -104,7 +108,7 @@
   (define (tag x) (attach-tag 'rectangular x))
   (put 'real-part '(rectangular) real-part)
   (put 'imag-part '(rectangular) imag-part)
-  (put 'magnitude '(rectangular) magnitude)
+  (put 'magnitude '(rectangular) magnitude-rectangular)
   (put 'angle '(rectangular) angle)
   (put 'make-from-real-imag 'rectangular
        (lambda (x y) (tag (make-from-real-imag x y))))
@@ -116,11 +120,11 @@
 ; polar complex numbers
 (define (install-polar-package)
   ;; internal procedures
-  (define (magnitude z) (car z))
+  (define (magnitude-polar z) (car z))
   (define (angle z) (cdr z))
   (define (make-from-mag-ang r a) (cons r a))
-  (define (real-part z) (* (magnitude z) (cos (angle z))))
-  (define (imag-part z) (* (magnitude z) (sin (angle z))))
+  (define (real-part z) (* (magnitude-polar z) (cos (angle z))))
+  (define (imag-part z) (* (magnitude-polar z) (sin (angle z))))
   (define (make-from-real-imag x y)
     (cons (sqrt (+ (square x) (square y)))
           (atan y x)))
@@ -174,14 +178,14 @@
   ; 2.77
   (put 'real-part '(complex) real-part)
   (put 'imag-part '(complex) imag-part)
-  (put 'magnitude '(complex) magnitude)
+  (put 'magnitude '(complex) magnitude-complex)
   (put 'angle '(complex) angle)
   ; ---
   'done)
 
 (define (real-part z) (apply-generic 'real-part z))
 (define (imag-part z) (apply-generic 'imag-part z))
-(define (magnitude z) (apply-generic 'magnitude z))
+(define (magnitude-complex z) (apply-generic 'magnitude z))
 (define (angle z) (apply-generic 'angle z))
 (define (make-from-real-imag x y)
   ((get 'make-from-real-imag 'rectangular) x y))
@@ -206,4 +210,4 @@
 (provide make-rational)
 (provide make-complex-from-real-imag)
 
-(provide magnitude)
+(provide magnitude-complex)
