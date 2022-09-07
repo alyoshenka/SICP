@@ -1,0 +1,11 @@
+#lang racket
+
+(require "./generic_arithmetic_package.rkt")
+
+(display "2.77")(newline)
+
+(install-scheme-number-package)
+(install-rational-package)
+(install-complex-package)
+
+(magnitude (make-complex-from-real-imag 3 4))

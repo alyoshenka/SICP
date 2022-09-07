@@ -1,6 +1,6 @@
 #lang racket
 
-(require "./2_73_helpers.rkt")
+(require "./operations_table.rkt")
 
 ; 2.73
 
@@ -186,4 +186,11 @@ are required?
 
 Reverse the order that the tags are put into the system
 ie (put 'deriv 'symbol derivative)) -> (put 'symbol 'deriv derivative))
+Not exactly!
+By swapping the order, the fundamental meaning of the
+symbol-to-derivative-function table is altered. Instead of being a table
+where derivative procedures are indexed by arithmetic operator,
+this is now a table containing operations for arithmetic operators, of which
+one may be a derivative procedure. Now a install-deriv-package procedure
+must install all the arithmetic/etc derivative steps in one go.
 |#
