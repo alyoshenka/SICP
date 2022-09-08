@@ -14,12 +14,12 @@
       (error "Bad tagged datum: CONTENTS" datum)))
 
 (define (apply-generic op . args)
-  (display "- apply-generic: ")(display op)(display ", ")(display args)(newline)
+  ;(display "- apply-generic: ")(display op)(display ", ")(display args)(newline)
   (let ((type-tags (map type-tag args)))
-    (display "  type-tags: ")(display type-tags)(newline)
+    ;(display "  type-tags: ")(display type-tags)(newline)
     (let ((proc (get op type-tags)))
-      (display "  proc: ")(display proc)(newline)
-      (display "  map contents args: ")(display (map contents args))(newline)
+      ;(display "  proc: ")(display proc)(newline)
+      ;(display "  map contents args: ")(display (map contents args))(newline)
       (if proc          
           (apply proc (map contents args))
           (error
@@ -31,6 +31,10 @@
 (define (sub x y) (apply-generic 'sub x y))
 (define (mul x y) (apply-generic 'mul x y))
 (define (div x y) (apply-generic 'div x y))
+
+; 2.79
+(define (equ? x y) (apply-generic 'equ? x y))
+; ---
 
 ; ---
 ; scheme-number (basic numbers)
@@ -45,13 +49,16 @@
   (put 'div '(scheme-number scheme-number)
        (lambda (x y) (tag (/ x y))))
   (put 'make 'scheme-number (lambda (x) (tag x)))
+  ; 2.79
+  (put 'equ? '(scheme-number scheme-number)
+       (lambda (x y) (eq? x y)))
+  ; ---
   'done)
 
 (define (make-scheme-number n)
   ((get 'make 'scheme-number) n))
 ; ---
 
-; ---
 ; rational numbers
 (define (install-rational-package)
   ;; internal procedures
@@ -74,6 +81,12 @@
   (define (div-rat x y)
     (make-rat (* (numer x) (denom y))
               (* (denom x) (numer y))))
+  ; 2.79
+  (define (equ? a b)
+    (and
+     (eq? (numer a) (numer b))
+     (eq? (denom a) (denom b))))
+  ; --- 
   ;; interface to rest of the system
   (define (tag x) (attach-tag 'rational x))
   (put 'add '(rational rational)
@@ -86,6 +99,9 @@
        (lambda (x y) (tag (div-rat x y))))
   (put 'make 'rational
        (lambda (n d) (tag (make-rat n d))))
+  ; 2.79
+  (put 'equ? '(rational rational) equ?)
+  ; ---
   'done)
 (define (make-rational n d)
   ((get 'make 'rational) n d))
@@ -104,6 +120,12 @@
     (atan (imag-part z) (real-part z)))
   (define (make-from-mag-ang r a)
     (cons (* r (cos a)) (* r (sin a))))
+  ; 2.79
+  (define (equ? a b)
+    (and
+     (eq? (real-part a) (real-part b))
+     (eq? (imag-part a) (imag-part b))))
+  ; --- 
   ;; interface to the rest of the system
   (define (tag x) (attach-tag 'rectangular x))
   (put 'real-part '(rectangular) real-part)
@@ -114,6 +136,9 @@
        (lambda (x y) (tag (make-from-real-imag x y))))
   (put 'make-from-mag-ang 'rectangular
        (lambda (r a) (tag (make-from-mag-ang r a))))
+  ; 2.79
+  (put 'equ? '(rectangular rectangular) equ?)
+  ; ---
   'done)
 ; ---
 
@@ -128,6 +153,12 @@
   (define (make-from-real-imag x y)
     (cons (sqrt (+ (square x) (square y)))
           (atan y x)))
+  ; 2.79
+  (define (equ? x y)
+    (and
+     (= (magnitude-polar x) (magnitude-polar y))
+     (= (angle x) (angle y))))
+  ; ---
   ;; interface to the rest of the system
   (define (tag x) (attach-tag 'polar x))
   (put 'real-part '(polar) real-part)
@@ -138,6 +169,10 @@
        (lambda (x y) (tag (make-from-real-imag x y))))
   (put 'make-from-mag-ang 'polar
        (lambda (r a) (tag (make-from-mag-ang r a))))
+  ; 2.79
+  (put 'equ? '(polar polar)
+       (lambda (x y) (equ? x y)))
+  ; ---
   'done)
 ; ---
 
@@ -161,6 +196,10 @@
   (define (div-complex z1 z2)
     (make-from-mag-ang (/ (magnitude z1) (magnitude z2))
                        (- (angle z1) (angle z2))))
+  ; 2.79
+  (define (equ? x y)
+    ((get 'equ? (list (type-tag x) (type-tag y))) (contents x) (contents y)))
+  ; ---
   ;; interface to rest of the system
   (define (tag z) (attach-tag 'complex z))
   (put 'add '(complex complex)
@@ -181,6 +220,9 @@
   (put 'magnitude '(complex) magnitude-complex)
   (put 'angle '(complex) angle)
   ; ---
+  ; 2.79
+  (put 'equ? '(complex complex) equ?)
+  ; ---
   'done)
 
 (define (real-part z) (apply-generic 'real-part z))
@@ -191,7 +233,6 @@
   ((get 'make-from-real-imag 'rectangular) x y))
 (define (make-from-mag-ang r a)
   ((get 'make-from-mag-ang 'polar) r a))
-
 (define (make-complex-from-real-imag x y)
   ((get 'make-from-real-imag 'complex) x y))
 (define (make-complex-from-mag-ang r a)
@@ -206,8 +247,15 @@
 (provide install-rational-package)
 (provide install-complex-package)
 
+;(provide make-rectangular-sicp)
+;(provide make-polar-sicp)
 (provide make-scheme-number)
 (provide make-rational)
 (provide make-complex-from-real-imag)
+(provide make-complex-from-mag-ang)
 
 (provide magnitude-complex)
+
+; 2.79
+(provide equ?)
+; ---
