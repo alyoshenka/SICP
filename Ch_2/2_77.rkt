@@ -45,5 +45,10 @@ voked? What procedure is dispatched to in each case?
 apply-generic is invoked twice: once for the 'complex tag, and once
 for the 'rectangular tag (once for every (type, contents) pair)
 
--> added function tags to see different versions of mag func
+First magnitude from the overall complex package is called, then
+magnitude from the inner rectangular package
+
+The issue is that 'complex-tagged numbers did not have a magnitude
+operation, it was internal only to the polar and rectangular
+packages they built on
 |#
