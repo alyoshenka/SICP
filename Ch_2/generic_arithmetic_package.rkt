@@ -35,6 +35,9 @@
 ; 2.79
 (define (equ? x y) (apply-generic 'equ? x y))
 ; ---
+; 2.80
+(define (=zero? x) (apply-generic '=zero? x))
+; ---
 
 ; ---
 ; scheme-number (basic numbers)
@@ -52,6 +55,10 @@
   ; 2.79
   (put 'equ? '(scheme-number scheme-number)
        (lambda (x y) (eq? x y)))
+  ; ---
+  ; 2.80
+  (put '=zero? '(scheme-number)
+       (lambda (x) (= 0 x)))
   ; ---
   'done)
 
@@ -86,7 +93,10 @@
     (and
      (eq? (numer a) (numer b))
      (eq? (denom a) (denom b))))
-  ; --- 
+  ; ---
+  ; 2.80
+  (define (=zero? r)
+    (= 0 (numer r)))
   ;; interface to rest of the system
   (define (tag x) (attach-tag 'rational x))
   (put 'add '(rational rational)
@@ -102,6 +112,8 @@
   ; 2.79
   (put 'equ? '(rational rational) equ?)
   ; ---
+  ; 2.80
+  (put '=zero? '(rational) =zero?)
   'done)
 (define (make-rational n d)
   ((get 'make 'rational) n d))
@@ -125,7 +137,10 @@
     (and
      (eq? (real-part a) (real-part b))
      (eq? (imag-part a) (imag-part b))))
-  ; --- 
+  ; ---
+  ; 2.80
+  (define (=zero? r)
+    (= 0 (magnitude-rectangular r)))
   ;; interface to the rest of the system
   (define (tag x) (attach-tag 'rectangular x))
   (put 'real-part '(rectangular) real-part)
@@ -139,6 +154,8 @@
   ; 2.79
   (put 'equ? '(rectangular rectangular) equ?)
   ; ---
+  ; 2.80
+  (put '=zero? '(rectangular) =zero?)
   'done)
 ; ---
 
@@ -159,6 +176,9 @@
      (= (magnitude-polar x) (magnitude-polar y))
      (= (angle x) (angle y))))
   ; ---
+  ; 2.80
+  (define (=zero? p)
+    (= 0 (magnitude-polar p)))
   ;; interface to the rest of the system
   (define (tag x) (attach-tag 'polar x))
   (put 'real-part '(polar) real-part)
@@ -172,6 +192,10 @@
   ; 2.79
   (put 'equ? '(polar polar)
        (lambda (x y) (equ? x y)))
+  ; ---
+  ; 2.80
+  (put '=zero? '(polar)
+       (lambda (p) (=zero? p)))
   ; ---
   'done)
 ; ---
@@ -200,6 +224,10 @@
   (define (equ? x y)
     ((get 'equ? (list (type-tag x) (type-tag y))) (contents x) (contents y)))
   ; ---
+  ; 2.80
+  (define (=zero? a)
+    ((get '=zero? (list (type-tag a))) (contents a)))
+  ; ---
   ;; interface to rest of the system
   (define (tag z) (attach-tag 'complex z))
   (put 'add '(complex complex)
@@ -222,6 +250,9 @@
   ; ---
   ; 2.79
   (put 'equ? '(complex complex) equ?)
+  ; ---
+  ; 2.80
+  (put '=zero? '(complex) =zero?)
   ; ---
   'done)
 
@@ -259,3 +290,5 @@
 ; 2.79
 (provide equ?)
 ; ---
+; 2.80
+(provide =zero?)
