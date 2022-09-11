@@ -14,17 +14,32 @@
       (error "Bad tagged datum: CONTENTS" datum)))
 
 (define (apply-generic op . args)
-  ;(display "- apply-generic: ")(display op)(display ", ")(display args)(newline)
+  ;(display op)(display " ")(display args)(newline)
   (let ((type-tags (map type-tag args)))
-    ;(display "  type-tags: ")(display type-tags)(newline)
     (let ((proc (get op type-tags)))
-      ;(display "  proc: ")(display proc)(newline)
-      ;(display "  map contents args: ")(display (map contents args))(newline)
-      (if proc          
+      (if proc
           (apply proc (map contents args))
-          (error
-           "No method for these types: APPLY-GENERIC"
-           (list op type-tags))))))
+          (if (= (length args) 2)
+              (let ((type1 (car type-tags))
+                    (type2 (cadr type-tags))
+                    (a1 (car args))
+                    (a2 (cadr args)))
+                ;(display "a1: ")(display a1)(newline)
+                ;(display "a2: ")(display a2)(newline)
+                (let ((t1->t2 (get-coercion type1 type2))
+                      (t2->t1 (get-coercion type2 type1)))
+                  (cond (t1->t2
+                         ;(display "found mapping ")(display type1)
+                         ;(display " to ")(display type2)(newline)
+                         ;(display t1->t2)(newline)
+                         ;(display (t1->t2 a1))(newline)
+                         (apply-generic op (t1->t2 a1) a2))
+                        (t2->t1
+                         (apply-generic op a1 (t2->t1 a2)))
+                        (else (error "No method for these types"
+                                     (list op type-tags))))))
+              (error "No method for these types"
+                     (list op type-tags)))))))
 
 ; generic arithmetic procedures
 (define (add x y) (apply-generic 'add x y))
@@ -108,7 +123,9 @@
   (put 'div '(rational rational)
        (lambda (x y) (tag (div-rat x y))))
   (put 'make 'rational
-       (lambda (n d) (tag (make-rat n d))))
+       (lambda (n d)
+         ;(display "n: ")(display n)(newline)
+         (tag (make-rat n d))))
   ; 2.79
   (put 'equ? '(rational rational) equ?)
   ; ---
@@ -116,6 +133,7 @@
   (put '=zero? '(rational) =zero?)
   'done)
 (define (make-rational n d)
+  ;(display "making rational")(newline)
   ((get 'make 'rational) n d))
 ; ---
 
@@ -287,8 +305,16 @@
 (define (put-coercion from to func)
   (put 'coercion (list from to) func))
 (define (get-coercion from to)
-  (display "getting ")(display from)(display " to ")(display to)(newline)
   (get 'coercion (list from to)))
+
+(define (scheme-number->scheme-number n) n)
+(define (rational->rational r) r)
+(define (complex->complex z) z)
+(put-coercion 'scheme-number
+              'scheme-number
+              scheme-number->scheme-number)
+(put-coercion 'rational 'rational rational->rational)
+(put-coercion 'complex 'complex complex->complex)
 
 (display "test basic coercion input")(newline)
 (put-coercion 't1 't2 (lambda (x y) (+ x y)))
@@ -298,11 +324,13 @@
 ; coercion procedures
 
 ; number -> rational -> (real ->) complex
+
 (put-coercion
  'scheme-number
  'rational
  (lambda (n)
-   (make-rational n 1)))
+   ;(display "making rational: ")(display n)(newline)
+   (make-rational (contents n) 1)))
 (put-coercion
  'rational
  'complex
@@ -310,4 +338,23 @@
    (make-complex-from-real-imag n 0)))
 
 (make-rational 1 3)
-((get-coercion 'scheme-number 'rational) 1)
+((get-coercion 'scheme-number 'rational) (make-scheme-number 1))
+
+(newline)
+(display "add numbers of same type")(newline)
+(add (make-scheme-number 5) (make-scheme-number 2))
+(add (make-rational 1 2) (make-rational 1 4))
+(add (make-complex-from-real-imag 2 5) (make-complex-from-real-imag 2 4))
+
+(newline)
+(display "convert types")(newline)
+((get-coercion 'scheme-number 'rational) (make-scheme-number 2))
+((get-coercion 'rational 'complex) (make-rational 1 2))
+
+(newline)
+(display "add numbers of different types")(newline)
+(display "  scheme-number - rational")(newline)
+(add (make-scheme-number 1) (make-rational 1 2))
+(add (make-rational 1 2) (make-scheme-number 1))
+(display "  rational complex")(newline)
+(add (make-rational 1 2) (make-complex-from-mag-ang 2 3))
