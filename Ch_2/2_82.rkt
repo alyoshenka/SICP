@@ -14,40 +14,54 @@
       (error "Bad tagged datum: CONTENTS" datum)))
 
 (define (apply-generic op . args)
-  ;(display op)(display " ")(display args)(newline)
-  (let ((type-tags (map type-tag args)))
-    (let ((proc (get op type-tags)))
-      ;(display "proc: ")(display proc)(newline)
-      (if proc
-          (apply proc (map contents args))
-          (if (= (length args) 2)
-              (let ((type1 (car type-tags))
-                    (type2 (cadr type-tags))
-                    (a1 (car args))
-                    (a2 (cadr args)))
-                ;(display "a1: ")(display a1)(newline)
-                ;(display "a2: ")(display a2)(newline)
-                (let ((t1->t2 (get-coercion type1 type2))
-                      (t2->t1 (get-coercion type2 type1)))
-                  (cond
-                    ((eq? type1 type2)
-                     ((error "No method for these types"
-                                 (list op type-tags))))
-                    (t1->t2
-                     ;(display "found mapping ")(display type1)
-                     ;(display " to ")(display type2)(newline)
-                     ;(display t1->t2)(newline)
-                     ;(display (t1->t2 a1))(newline)
-                     (apply-generic op (t1->t2 a1) a2))
-                    (t2->t1
-                     (apply-generic op a1 (t2->t1 a2)))
-                    (else (error "No method for these types"
-                                 (list op type-tags))))))
-              (error "No method for these types"
-                     (list op type-tags)))))))
+  (display "op: ")(display op)(newline)
+  (display "args: ")(display args)(newline)
+  (define (attempt-coercion args)
+    (display "attempting to coerce: ")(display args)(newline)
+    (if (pair? args)
+        0
+        args))
+    
+  (let ((args (car args)))  
+    (let ((type-tags (map type-tag args)))
+      (let ((proc (get op type-tags)))
+        (if proc
+            (apply proc (map contents args))          
+            (cond
+              ((= (length args) 2)
+               (let ((type1 (car type-tags))
+                     (type2 (cadr type-tags))
+                     (a1 (car args))
+                     (a2 (cadr args)))
+                 (let ((t1->t2 (get-coercion type1 type2))
+                       (t2->t1 (get-coercion type2 type1)))
+                   (cond
+                     ((eq? type1 type2)
+                      ((error "No method for these types"
+                              (list op type-tags))))
+                     (t1->t2
+                      (apply-generic op (list (t1->t2 a1) a2)))
+                     (t2->t1
+                      (apply-generic op (list a1 (t2->t1 a2))))
+                     (else (error "No method for these types"
+                                  (list op type-tags)))))))
+              ; attempt to do it one-by one
+              ((< (length args) 2)
+               (error "No method for these types" (list op type-tags)))
+              (else
+               ; apply-generic to the first 2,
+               ; cons to list,
+               ; apply-generic to remaining list
+               (let ((first (car args))
+                     (second (cadr args))
+                     (remaining (caddr args)))
+                 (let ((res (apply-generic op (list first second))))
+                   (let ((new-args (list res remaining)))
+                     (apply-generic op new-args)))))))))))
+               
 
 ; generic arithmetic procedures
-(define (add x y) (apply-generic 'add x y))
+; (define (add x y) (apply-generic 'add x y))
 (define (sub x y) (apply-generic 'sub x y))
 (define (mul x y) (apply-generic 'mul x y))
 (define (div x y) (apply-generic 'div x y))
@@ -312,19 +326,10 @@
 (display " --- ")(newline)
 
 ; Coercion
-
 (define (put-coercion from to func)
   (put 'coercion (list from to) func))
 (define (get-coercion from to)
   (get 'coercion (list from to)))
-
-(define (scheme-number->scheme-number n) n)
-(define (rational->rational r) r)
-(define (complex->complex z) z)
-; not really necessary, but working around it
-;(put-coercion 'scheme-number 'scheme-number scheme-number->scheme-number)
-;(put-coercion 'rational 'rational rational->rational)
-;(put-coercion 'complex 'complex complex->complex)
 ; ---
 
 (display "test basic coercion input")(newline)
@@ -348,6 +353,7 @@
  (lambda (n)
    (make-complex-from-real-imag n 0)))
 
+#|
 (make-rational 1 3)
 ((get-coercion 'scheme-number 'rational) (make-scheme-number 1))
 
@@ -371,22 +377,115 @@
 ;(add (make-rational 1 2) (make-complex-from-mag-ang 2 3))
 ; this won't work because complex doesn't have a way to add rational numbers
 ; in its constructor.
-
+|#
 
 #|
-a. With Louis’s coercion procedures installed, what hap-
-pens if apply-generic is called with two arguments
-of type scheme-number or two arguments of type complex
-for an operation that is not found in the table for those
-types?
-|#
-(define (exp x y) (apply-generic 'exp x y))
-#|
-What happens if we call exp with two complex num-
-bers as arguments?
+Exercise 2.82: Show how to generalize apply-generic to
+handle coercion in the general case of multiple arguments.
+One strategy is to aempt to coerce all the arguments to
+the type of the first argument, then to the type of the sec-
+ond argument, and so on. Give an example of a situation
+where this strategy (and likewise the two-argument ver-
+sion given above) is not sufficiently general. (Hint: Con-
+sider the case where there are some suitable mixed-type
+operations present in the table that will not be tried.)
 
-"No method for these types", which is the expected result
+if args length is one, the fact that no procedure has been
+found means there is not one for the single type. this should
+result in an error
+else, essentially coerce all arguments to the "highest" type
+coercing the first to second type, first two to third type, etc
+will fail if the first argument is the highest in the type tower
 
-b. He is incorrect, it works correctly as is. 
+I guess you could coerce forward then backward, to ensure that
+you are finding the highest type
+
+scheme-number, rational, complex, complex, rational
+-> rational, rational, complex, complex, rational
+   complex, complex, complex, complex, rational
+   complex, complex, complex, complex, rational*
+
+maybe it in fact does work
+
+first to second
+first and second to third
+...
+
+keep a record to the highest type encountered
+ie if you *can* coerce a type
+
+rational, scheme-number, complex
+
+can you get this done with one pass of the list? No, I don't think so
+
+highest: rational
+scheme-number -> rational
+highest: complex
+rational (both) -> complex
+
+**Any time you encounter a higher type than before, coerce all items
+to that type**
+
+This will not coerce more than necessary (if only single step coercion
+procedure are defined) because all coercion steps would need to be
+applied anyway. However, it does involve multiple passes over the list
+for any time a "higher" type is encountered.
+
+But there still needs to be a heirarchy of types
+What happens if there is a 2+ "floor" jump of types?
+scheme-number, complex
+there is no scheme-number->complex coercion, so how do we know that
+it can be coerced? Do we have to put every combination into the table?
+That seems inefficient.
+
 |#
-(exp (make-complex-from-real-imag 1 2) (make-complex-from-real-imag 1 2))
+
+(newline)
+(display "2.82")(newline)
+(newline)
+
+(display "redefining 'add' to allow for variable number of arguments")(newline)
+(define (add . args) (apply-generic 'add args))
+
+(put-coercion
+ 'scheme-number
+ 'complex
+ (lambda (n)
+   (make-complex-from-real-imag ((get-coercion 'scheme-number 'rational) n) 0)))
+
+(display "test multi-step coercion")(newline)
+((get-coercion 'scheme-number 'complex) (make-scheme-number 5))
+
+(newline)
+(display "test 0 and 1 argument add")(newline)
+;(add)
+;(add (make-scheme-number 1))
+
+
+(newline)
+(display "test add with 2 arguments, of the same type")(newline)
+(add (make-scheme-number 1) (make-scheme-number 2))
+
+(newline)
+(display "test add with > 2 arguments, of the same type")(newline)
+(add
+  (make-scheme-number 1)
+  (make-scheme-number 2)
+  (make-scheme-number 3)
+  (make-scheme-number 4))
+
+(newline)
+(display "test add with 2 arguments, of different types")
+(newline)
+(add (make-scheme-number 1) (make-rational 1 2))
+(add (make-rational 1 2) (make-scheme-number 1))
+
+(newline)
+(display "test add with > 2 arguments, of different types, with increasing 'height'")
+(newline)
+(add
+ (make-scheme-number 1)
+ (make-rational 2 3)
+ (make-complex-from-real-imag 4 5))
+
+; getting convoluted, moving on in the interest of progress
