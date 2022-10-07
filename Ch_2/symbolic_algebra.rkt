@@ -35,6 +35,8 @@
           (else
            (let ((t1 (first-term L1))
                  (t2 (first-term L2)))
+             (display "t1: ")(display t1)(newline)
+             (display "t2: ")(display t2)(newline)
              (cond ((> (order t1) (order t2))
                     (adjoin-term
                      t1 (add-terms (rest-terms L1) L2)))
@@ -135,3 +137,11 @@
 (zero-test a #t)
 (zero-test b #f)
 (zero-test c #t)
+
+(newline)(display "2.88")(newline)
+
+(display "test add operation")(newline)
+(display "b: ")(display b)(newline)
+(display "c: ")(display c)(newline)
+
+(display "b + c: ")(display (add b c))(newline)
