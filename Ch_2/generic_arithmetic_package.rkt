@@ -14,7 +14,7 @@
       (error "Bad tagged datum: CONTENTS" datum)))
 
 (define (apply-generic op . args)
-  ;(display "- apply-generic: ")(display op)(display ", ")(display args)(newline)
+  ; (display "- apply-generic: ")(display op)(display ", ")(display args)(newline)
   (let ((type-tags (map type-tag args)))
     ;(display "  type-tags: ")(display type-tags)(newline)
     (let ((proc (get op type-tags)))
@@ -292,3 +292,8 @@
 ; ---
 ; 2.80
 (provide =zero?)
+; ---
+; 2.87
+(provide add)
+(provide mul)
+(provide attach-tag)
